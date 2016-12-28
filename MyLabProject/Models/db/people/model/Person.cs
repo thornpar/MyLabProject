@@ -11,16 +11,16 @@ namespace MyLabProject.Models.db.people.model
     {
         public Person()
         {
-            DynamicFields = new List<PersonDynamics>();
         }
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid Id { get; set; }
         public string Name { get; set; }
+        public Dictionary<string, object> DynamicProperties { get; set; }
 
-        public virtual IList<PersonDynamics> DynamicFields { get; set; }
+        //public virtual IList<PersonDynamics> DynamicFields { get; set; }
 
-        private IDictionary<string, object> tempDictionary { get; set; }
+        /*private IDictionary<string, object> tempDictionary { get; set; }
         public virtual IDictionary<string, object> DynamicProperties
         {
             get
@@ -36,6 +36,6 @@ namespace MyLabProject.Models.db.people.model
             {
                 tempDictionary = value;
             }
-        }
+        }*/
     }
 }

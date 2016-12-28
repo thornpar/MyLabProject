@@ -14,6 +14,7 @@ using System.Web.OData.Query;
 using System.Web.OData.Routing;
 using MyLabProject.Models.db.people.model;
 using MyLabProject.Models.dbmodels;
+using MyLabProject.FilterParser;
 
 namespace MyLabProject.Controllers
 {
@@ -32,11 +33,46 @@ namespace MyLabProject.Controllers
     {
         private PeopleContext db = new PeopleContext();
 
+        [EnableQuery]
+        [HttpGet]
+        public async Task<IHttpActionResult> GetPeopleFunction(ODataQueryOptions<Person> options)
+        {
+            db.Database.Log = s => System.Diagnostics.Debug.WriteLine(s);
+            MyFilterValueSupplier<object> filterSupplier = new MyFilterValueSupplier<object>();
+            List<FilterValue> filters = new List<FilterValue>();
+            if (options.Filter != null)
+            {
+                options.Filter.FilterClause.Expression.Accept(filterSupplier);
+                filters = filterSupplier.filterValueList;
+            }
+            var dyns = (from dynamics in db.PeopleDynamicFields
+                        select dynamics);
+
+            //We skip $select. This will put our result in memory.
+            IQueryable results = options.ApplyTo(db.People.AsQueryable());
+            var t = await results.ToListAsync();
+            return Ok(t);
+        }
         // GET: odata/People
         [EnableQuery]
-        public IQueryable<Person> GetPeople()
+        [HttpGet]
+        public async Task<IQueryable<Person>> GetPeople(ODataQueryOptions<Person> options)
         {
-            return db.People;
+            db.Database.Log = s => System.Diagnostics.Debug.WriteLine(s);
+            MyFilterValueSupplier<object> filterSupplier = new MyFilterValueSupplier<object>();
+            List<FilterValue> filters = new List<FilterValue>();
+            if (options.Filter != null)
+            {
+                options.Filter.FilterClause.Expression.Accept(filterSupplier);
+                filters = filterSupplier.filterValueList;
+            }
+            var dyns = (from dynamics in db.PeopleDynamicFields
+                       select dynamics);
+
+            //We skip $select. This will put our result in memory.
+            IQueryable results = options.ApplyTo(db.People.AsQueryable());
+            var t = await results.ToListAsync();
+            return results as IQueryable<Person>;
         }
 
         // GET: odata/People(5)
@@ -148,13 +184,6 @@ namespace MyLabProject.Controllers
             await db.SaveChangesAsync();
 
             return StatusCode(HttpStatusCode.NoContent);
-        }
-
-        // GET: odata/People(5)/DynamicFields
-        [EnableQuery]
-        public IQueryable<PersonDynamics> GetDynamicFields([FromODataUri] Guid key)
-        {
-            return db.People.Where(m => m.Id == key).SelectMany(m => m.DynamicFields);
         }
 
         protected override void Dispose(bool disposing)
